@@ -1,10 +1,9 @@
 import os
 import dash
-import pandas as pd
 import dash_mantine_components as dmc
 import plotly.io as pio
 
-from dash import Dash, Input, Output, State, callback, clientside_callback, html, dcc
+from dash import Dash, Input, Output, State, callback, clientside_callback
 from dash_iconify import DashIconify
 
 external_stylesheets = list(dmc.styles.ALL)

@@ -6,7 +6,6 @@ import dash
 class TestCalendar(unittest.TestCase):
   def setUp(self):
     self.app = dash.Dash(__name__)
-    from dashboard.pages import calendar
 
   def test_first_of_month(self):
     from dashboard.pages.calendar import first_of_month

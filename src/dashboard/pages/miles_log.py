@@ -2,12 +2,10 @@ import os
 import dash
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.io as pio
-import plotly.express as px
 import dash_mantine_components as dmc
 import dash_ag_grid as dag
 import teslapy
-from dash import Input, Output, Patch, State, callback, html, dash_table, dcc
+from dash import Input, Output, State, callback, html, dcc
 
 from dashboard.db.pg import PG
 
