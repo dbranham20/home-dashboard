@@ -1,2 +1,4 @@
-`poetry install`
-`poetry run python src/dashboard/app.py`
+```
+poetry install
+poetry run python src/dashboard/app.py
+```
