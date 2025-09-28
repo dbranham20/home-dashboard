@@ -1,3 +1,4 @@
+import os
 import dash
 import pandas as pd
 import plotly.graph_objects as go
@@ -13,16 +14,14 @@ from dashboard.db.pg import PG
 dash.register_page(__name__, path="/mileage-log")
 
 def fetch_live_tesla_data():
-	with teslapy.Tesla('idanielbranham@gmail.com') as tesla:
-		if not tesla.authorized:
-			print('Please log in...')
+    with teslapy.Tesla(
+        os.getenv("TESLA_EMAIL"),
+        refresh_token=os.getenv("TESLA_REFRESH_TOKEN")
+    ) as tesla:
+        vehicles = tesla.vehicle_list()
+        my_car = vehicles[0]
+        return my_car.get_vehicle_data()
 
-		vehicles = tesla.vehicle_list()
-		my_car = vehicles[0]  
-
-		car_data = my_car.get_vehicle_data()
-
-	return car_data
 
 def fetch_mileage_data():
 	pg = PG()

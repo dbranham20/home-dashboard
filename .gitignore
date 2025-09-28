@@ -13,3 +13,5 @@ poetry.lock
 
 # dotenv / secrets
 .env
+
+cache.json
