@@ -217,9 +217,11 @@ def day_cell(day: date, ctx: MonthCtx, events_map: Dict[str, List[dict]], select
     badges = []
     for ev in events_map.get(iso, [])[:3]:
         label = format_time_12h(ev.get("time"))
+        author = ev.get("author", "")
         title = ev.get("title", "")
         text = f"{label} · {title}" if label else title
-        badges.append(html.Div(text, className="cal-badge"))
+        bg_color = '#d63384' if author.lower() == 'amanda' else '#1e6ffb' if author.lower() == 'daniel' else 'var(--muted)'
+        badges.append(html.Div(text, className="cal-badge", style={'backgroundColor': bg_color}))
 
     more_count = max(0, len(events_map.get(iso, [])) - 3)
     if more_count:
@@ -457,8 +459,8 @@ def save_event(n, selected_iso, title, time_str, author, recur, recur_end_iso, c
 
     title = (title or "").strip()
     author = (author or "").strip()
-    if not title or not author:
-        return dash.no_update, dash.no_update, "Title and author are required."
+    if not title:
+        return dash.no_update, dash.no_update, "Title required."
 
     start_d = datetime.strptime(selected_iso, "%Y-%m-%d").date()
     end_d = None

@@ -1,3 +1,4 @@
+import os
 import dash
 import pandas as pd
 import dash_mantine_components as dmc
@@ -10,6 +11,8 @@ external_stylesheets = list(dmc.styles.ALL)
 
 app = Dash(__name__, use_pages=True, external_stylesheets=external_stylesheets)
 dash._dash_renderer._set_react_version('18.2.0')
+server = app.server
+
 
 custom_template = pio.templates["plotly_dark"]
 custom_template.layout.paper_bgcolor = "#2e2e2e"
@@ -91,5 +94,5 @@ def navbar_is_open(opened, navbar):
 
 
 if __name__ == "__main__":
-    # app.run(host='0.0.0.0', port=8050, debug=True)
-    app.run(debug=True)
+    app.run_server(host="0.0.0.0", port=int(os.getenv("PORT", 8050)), debug=False)
+    # app.run(debug=True)
