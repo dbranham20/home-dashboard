@@ -48,7 +48,7 @@ jobs:
           # Provide safe/dummy envs for tests; real secrets live in Railway
           TESLA_EMAIL: ci@example.com
           DATABASE_URL: postgresql://user:pass@localhost:5432/testdb
-        run: poetry run pytest
+        run: poetry run pytest --cov=dashboard --cov-report=xml --cov-report=term-missing
 
       # Optional: linting
       - name: Ruff lint
@@ -59,3 +59,10 @@ jobs:
       - name: Type check
         if: always()
         run: poetry run mypy src || true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
