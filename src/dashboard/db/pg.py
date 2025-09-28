@@ -73,7 +73,7 @@ class PG:
                         return rows
                     self.connection.commit()
                     return None
-            except (OperationalError, InterfaceError) as e:
+            except (OperationalError, InterfaceError):
                 # Connection-related issue → reconnect & retry once
                 if attempts >= 2:
                     # second failure: bubble up

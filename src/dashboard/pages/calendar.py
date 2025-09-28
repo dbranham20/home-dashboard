@@ -82,8 +82,6 @@ def fetch_events_for_month(year: int, month: int):
         })
     return events
 
-from datetime import date
-
 def first_of_month(y: int, m: int) -> date:
     return date(y, m, 1)
 
