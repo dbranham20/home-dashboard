@@ -1,0 +1,15 @@
+# Python cache/compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Poetry
+poetry.lock
+
+# dotenv / secrets
+.env

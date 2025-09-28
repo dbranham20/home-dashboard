@@ -1,0 +1,13 @@
+.ag-theme-alpine-dark {
+    --ag-background-color: #2e2e2e;
+    --ag-odd-row-background-color: #383838;
+    --ag-header-background-color: #1f1f1f;
+    --ag-foreground-color: #ffffff;
+    --ag-border-color: #444444;
+    --ag-alternate-odd-row-background-color: #383838;
+    --ag-alternate-even-row-background-color: #2e2e2e;  
+}
+
+.mantine-TimePicker-dropdown {
+    z-index: 10001 !important;
+}

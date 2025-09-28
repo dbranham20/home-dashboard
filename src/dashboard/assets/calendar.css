@@ -1,0 +1,240 @@
+/* =========================
+   Theme variables
+   - Reads from data-mantine-color-scheme="light" | "dark"
+   - Fallback defaults to light
+   ========================= */
+
+:root {
+  /* constants */
+  --radius-lg: 16px;
+  --shadow-lg: 0 6px 24px rgba(0,0,0,0.12);
+  --gap: 12px;
+  --gap-sm: 6px;
+
+  /* LIGHT (fallback) */
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --muted: #606780;
+  --text: #111319;
+  --accent: #5b8cff;
+  --accent-soft: #263a80;
+  --today: #2a3a7a;
+  --border: rgba(17,19,25,0.08);
+}
+
+:root[data-mantine-color-scheme="light"] {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --muted: #606780;
+  --text: #111319;
+  --accent: #1565d8;
+  --accent-soft: #e6eefb;
+  --today: #8a91b4;
+  --border: rgba(17,19,25,0.08);
+}
+
+:root[data-mantine-color-scheme="dark"] {
+  --bg: #242424;
+  --card: #2e2e2e;
+  --muted: #8a91b4;
+  --text: #e7eaf6;
+  --accent: #5b8cff;
+  --accent-soft: #263a80;
+  --selected: #5b8cff;
+  --today: #2a3a7a;
+  --border: rgba(255,255,255,0.08);
+  --shadow-lg: 0 6px 24px rgba(0,0,0,0.35);
+}
+
+/* Smoothen theme flips a bit */
+/* *,
+*::before,
+*::after {
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+} */
+
+/* ====== App shell ====== */
+html, body, #react-entry-point, #_dash-app-content, #_dash-app-content > div { height: 100%; }
+
+.cal-app {
+  background: var(--bg);
+  min-height: 100vh;
+  padding: 28px;
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* cards */
+.cal-card, .side-card {
+  background: var(--card);
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.cal-card {
+  min-width: 720px;
+  width: min(100%, 960px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.side-card {
+  min-width: 320px;
+  width: min(100%, 420px);
+}
+
+/* header */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cal-month-label { font-weight: 600; }
+
+.cal-btn {
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform .06s ease, filter .12s ease, background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.cal-btn:hover { filter: brightness(1.05); }
+.cal-btn:active { transform: translateY(1px); }
+
+/* grid */
+.cal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--gap-sm);
+  padding: 0 var(--gap-sm) var(--gap-sm) var(--gap-sm);
+}
+
+.cal-weekdays span {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.cal-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--gap-sm);
+}
+
+.cal-day {
+  position: relative;
+  min-height: 96px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: transparent;
+  transition: background .12s ease, outline-color .12s ease;
+  outline: 1px solid transparent;
+}
+.cal-day:hover { outline-color: var(--accent); }
+
+.cal-day__num { font-size: 12px; color: var(--text); }
+
+.cal-day--out .cal-day__num { color: var(--muted); opacity: .6; }
+.cal-day--today { border: 3px solid var(--today); }
+.cal-day--selected { border-color: var(--selected) }
+
+/* badges */
+.cal-badges { display: flex; flex-direction: column; gap: 4px; }
+
+.cal-badge {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 100%;
+  border: 1px solid var(--border);
+}
+.cal-badge--more { opacity: .75; }
+
+/* right pane */
+.side-title { margin: 0 0 8px 0; }
+.side-subtitle { color: var(--muted); margin-bottom: 12px; }
+
+.side-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.side-row__time { font-size: 12px; color: var(--muted); width: 64px; }
+.side-row__title { font-weight: 600; }
+
+/* responsive */
+@media (max-width: 860px) {
+  .cal-card { min-width: 100%; }
+  .side-card { min-width: 100%; }
+}
+
+
+side-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  justify-content: space-between; /* push ends apart */
+  gap: 12px;
+}
+
+.side-row__time {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 64px;
+}
+
+.side-row__title {
+  flex: 1;
+  font-weight: 600;
+}
+
+.side-row__author {
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 70px;
+  text-align: right;
+}
+
+/* Author-specific colors */
+.author-amanda {
+  color: #d63384; /* pinkish */
+}
+
+.author-daniel {
+  color: #1e6ffb; /* blue */
+}
+
+.mantine-Chip-root .mantine-Chip-label {
+  border-radius: 999px;
+}
