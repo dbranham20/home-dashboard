@@ -16,7 +16,8 @@ dependencies = [
     "dash-iconify (>=0.1.2,<0.2.0)",
     "dash-ag-grid (>=31.3.1,<32.0.0)",
     "teslapy (>=2.9.0,<3.0.0)",
-    "python-dotenv (>=1.1.1,<2.0.0)"
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "gunicorn (>=23.0.0,<24.0.0)"
 ]
 
 [tool.poetry]
