@@ -68,3 +68,13 @@ jobs:
 
       - name: Code Coverage Summary
         uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage.xml
+          badge: true        # generates a badge svg in the summary
+          fail_below_min: true
+          format: markdown   # markdown table
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: both
+          thresholds: '60 80'
