@@ -66,3 +66,5 @@ jobs:
           name: coverage-report
           path: coverage.xml
 
+      - name: Code Coverage Summary
+        uses: irongut/CodeCoverageSummary@v1.3.0
