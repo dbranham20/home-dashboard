@@ -1,11 +1,11 @@
 import os
+import dash
 import calendar
+from dash import MATCH, Dash, callback, html, dcc, Input, Output, State, ALL
 from datetime import date, datetime, timedelta
+import dash_mantine_components as dmc
 from typing import Dict, List
 
-import dash
-from dash import MATCH, Dash, callback, html, dcc, Input, Output, State, ALL
-import dash_mantine_components as dmc
 from dashboard.db.pg import PG
 from dashboard.models.calendar import MonthCtx
 from dateutil.relativedelta import relativedelta
