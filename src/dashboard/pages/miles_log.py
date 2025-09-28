@@ -12,13 +12,13 @@ from dashboard.db.pg import PG
 dash.register_page(__name__, path="/mileage-log")
 
 def fetch_live_tesla_data():
-    with teslapy.Tesla(
-        os.getenv("TESLA_EMAIL"),
-        refresh_token=os.getenv("TESLA_REFRESH_TOKEN")
-    ) as tesla:
-        vehicles = tesla.vehicle_list()
-        my_car = vehicles[0]
-        return my_car.get_vehicle_data()
+	with teslapy.Tesla(os.getenv("TESLA_EMAIL")) as tesla:
+		if not tesla.authorized:
+			tesla.refresh_token(refresh_token=os.getenv("TESLA_REFRESH_TOKEN"))
+		vehicles = tesla.vehicle_list()
+		my_car = vehicles[0]
+		return my_car.get_vehicle_data()
+
 
 
 def fetch_mileage_data():
