@@ -171,8 +171,10 @@ def transactions():
 
         for tx in result["added"]:
             d = tx["date"]
-            if since and d < since: continue
-            if until and d > until: continue
+            if since and d < since: 
+                continue
+            if until and d > until: 
+                continue
 
             pending = tx.get("pending", False)
             if pending and not include_pending:

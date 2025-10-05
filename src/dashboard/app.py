@@ -1,4 +1,3 @@
-import os
 import dash
 import dash_mantine_components as dmc
 import plotly.io as pio

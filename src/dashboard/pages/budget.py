@@ -5,7 +5,7 @@ from datetime import date, timedelta
 import os
 import requests
 
-from dash import ClientsideFunction, html, dcc, callback, Input, Output, State, no_update
+from dash import ClientsideFunction, html, dcc, callback, Input, Output, State
 import dash
 import dash_mantine_components as dmc
 import dash_ag_grid as dag
