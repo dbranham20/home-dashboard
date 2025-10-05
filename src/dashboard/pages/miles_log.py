@@ -1,9 +1,11 @@
 import os
+import time
 import dash
 import pandas as pd
 import plotly.graph_objects as go
 import dash_mantine_components as dmc
 import dash_ag_grid as dag
+import requests
 import teslapy
 from dash import Input, Output, State, callback, html, dcc
 
@@ -11,13 +13,35 @@ from dashboard.db.pg import PG
 
 dash.register_page(__name__, path="/mileage-log")
 
-def fetch_live_tesla_data():
+def fetch_live_tesla_data(max_retries: int = 1, retry_delay: int = 10):
 	with teslapy.Tesla(os.getenv("TESLA_EMAIL")) as tesla:
 		if not tesla.authorized:
 			tesla.refresh_token(refresh_token=os.getenv("TESLA_REFRESH_TOKEN"))
+
 		vehicles = tesla.vehicle_list()
 		my_car = vehicles[0]
-		return my_car.get_vehicle_data()
+
+		for attempt in range(max_retries + 1):
+			try:
+				return my_car.get_vehicle_data()
+
+			except requests.exceptions.HTTPError as e:
+				if e.response.status_code == 408:
+					print("Vehicle unavailable — attempting to wake it up...")
+					my_car.sync_wake_up()
+					if attempt < max_retries:
+						time.sleep(retry_delay)
+						continue
+					else:
+						return {"error": "Vehicle unavailable after retries"}
+				else:
+					raise  # re-raise other HTTP errors
+
+			except Exception as e:
+				return {"error": str(e)}
+
+	return {"error": "Unknown failure"}
+
 
 
 
@@ -41,7 +65,7 @@ def fetch_mileage_data():
 		return pd.DataFrame()
 
 
-def make_charts(mileage_df, battery_perc):
+def make_db_charts(mileage_df):
 	bar_colors = [
 		"red" if avg > 40 else "#4ea35a"
 		for avg in mileage_df["Avg_Mileage_Per_Day"].fillna(0)
@@ -79,6 +103,10 @@ def make_charts(mileage_df, battery_perc):
 		template="plotly_white"
 	)
 
+	return line_fig, bar_fig
+
+
+def make_live_charts(battery_perc):
 	battery_level = max(0, min(100, battery_perc))
 
 	if battery_level < 20:
@@ -88,28 +116,19 @@ def make_charts(mileage_df, battery_perc):
 	else:
 		color = 'green'
 
-	batt_fig = dmc.Progress(
-			value=battery_level,
-			color=color,  # Mantine color or hex
-			size="lg",
-			radius="sm"
+
+	batt_fig = dmc.ProgressRoot(
+			[
+					dmc.ProgressSection(dmc.ProgressLabel(f"{battery_level}%"), value=battery_level, color=color)
+			],
+			size="xl",
 	)
 	battery_card = html.Div([
 		html.H3("Battery Level", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
 		batt_fig
 	])
 
-	# batt_fig.update_layout(
-  #       xaxis=dict(range=[0, 100], showticklabels=False, showgrid=False, zeroline=False),
-  #       yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-  #       height=120,
-  #       margin=dict(l=10, r=10, t=10, b=10),
-  #       showlegend=False,
-  #       title=None,
-  #   )
-
-
-	return line_fig, bar_fig, battery_card
+	return battery_card
 
 # Add to your Dash layout
 def layout():
@@ -185,11 +204,8 @@ def layout():
 @callback(
 	Output('line', 'figure', allow_duplicate=True),
 	Output('bar', 'figure', allow_duplicate=True),
-	Output('odometer-card', 'children'),
-	Output('battery-card', 'children'),
 	Output('mileage-log-grid', 'rowData'),
 	Output('mileage-log-grid', 'className'),
-	Output('tesla-title', 'children'),
 	Input('mileage-init-load', 'data'),
 	Input("color-scheme-switch", "checked"),
 	State("color-scheme-switch", "checked"),
@@ -197,15 +213,33 @@ def layout():
 	State('bar', 'figure'),
 	prevent_initial_call=True
 )
-def handle_mileage_load(_, _1, theme_state, line_fig, bar_fig):
+def init_db_charts(_, _1, theme_state, line_fig, bar_fig):
 	if dash.callback_context.triggered_id == 'color-scheme-switch':
 		template = 'dark_custom' if theme_state else 'plotly'
 		line_fig = go.Figure(line_fig).update_layout(template=template)
 		bar_fig = go.Figure(bar_fig).update_layout(template=template)
-		return line_fig, bar_fig, dash.no_update, dash.no_update, dash.no_update, "ag-theme-alpine-dark" if theme_state else "ag-theme-alpine", dash.no_update
-	
+		return line_fig, bar_fig, dash.no_update, "ag-theme-alpine-dark" if theme_state else "ag-theme-alpine"
 
 	data = fetch_mileage_data()
+	line_fig, bar_fig = make_db_charts(data)
+
+	template = 'dark_custom' if theme_state else 'plotly'
+	line_fig.update_layout(template=template)
+	bar_fig.update_layout(template=template)
+
+	grid_class = "ag-theme-alpine-dark" if theme_state else "ag-theme-alpine"
+
+	return line_fig, bar_fig, data.to_dict('records'), grid_class,
+
+
+@callback(
+	Output('odometer-card', 'children'),
+	Output('battery-card', 'children'),
+	Output('tesla-title', 'children'),
+	Input('mileage-init-load', 'data'),	
+	prevent_initial_call=True
+)
+def handle_mileage_load(_,):
 	car_data = fetch_live_tesla_data()
 	
 	battery_level = car_data['charge_state']['battery_level']  
@@ -216,11 +250,6 @@ def handle_mileage_load(_, _1, theme_state, line_fig, bar_fig):
 			html.H3("Odometer", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
 			html.H2(f'{round(odometer):,} miles', style={'margin': 0})
 		]
-	line_fig, bar_fig, batt_fig = make_charts(data, int(battery_level))
+	batt_fig = make_live_charts(int(battery_level))
 
-	template = 'dark_custom' if theme_state else 'plotly'
-	line_fig.update_layout(template=template)
-	bar_fig.update_layout(template=template)
-	grid_class = "ag-theme-alpine-dark" if theme_state else "ag-theme-alpine"
-
-	return line_fig, bar_fig, odometer_card, batt_fig, data.to_dict('records'), grid_class, tesla_name
+	return odometer_card, batt_fig, tesla_name
