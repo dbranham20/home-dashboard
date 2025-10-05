@@ -2,15 +2,24 @@ import os
 import dash
 import dash_mantine_components as dmc
 import plotly.io as pio
+from flask_cors import CORS
 
+from dashboard.services.plaid import plaid_bp
 from dash import Dash, Input, Output, State, callback, clientside_callback
 from dash_iconify import DashIconify
 
-external_stylesheets = list(dmc.styles.ALL)
 
-app = Dash(__name__, use_pages=True, external_stylesheets=external_stylesheets)
+app = Dash(
+    __name__, 
+    use_pages=True,
+    external_scripts=["https://cdn.plaid.com/link/v2/stable/link-initialize.js"]
+)
 dash._dash_renderer._set_react_version('18.2.0')
 server = app.server
+
+CORS(server, resources={r"/plaid/*": {"origins": "*"}})
+
+server.register_blueprint(plaid_bp)
 
 
 custom_template = pio.templates["plotly_dark"]
@@ -45,7 +54,7 @@ app.layout = dmc.MantineProvider(
             children=[
 				dmc.NavLink(
                     label="Home",
-                    leftSection=DashIconify(icon="bi:house-door-fill", width=16, height=16, color='#4ea35a'),
+                    leftSection=DashIconify(icon="bi:house-door-fill", width=16, height=16, color="#778500"),
                     href="/", 
                     active="exact"
                 ),
@@ -53,6 +62,12 @@ app.layout = dmc.MantineProvider(
                     label="Tesla",
                     leftSection=DashIconify(icon="simple-icons:tesla", width=16, height=16, color='red'),
                     href="/mileage-log", 
+                    active="exact"
+                ),
+                dmc.NavLink(
+                    label="Budget",
+                    leftSection=DashIconify(icon="mdi:finance", width=16, height=16, color='green'),
+                    href="/budget", 
                     active="exact"
                 ),
             ],
@@ -93,5 +108,5 @@ def navbar_is_open(opened, navbar):
 
 
 if __name__ == "__main__":
-    app.run_server(host="0.0.0.0", port=int(os.getenv("PORT", 8050)), debug=False)
-    # app.run(debug=True)
+    # app.run_server(host="0.0.0.0", port=int(os.getenv("PORT", 8050)), debug=False)
+    app.run(debug=True)
