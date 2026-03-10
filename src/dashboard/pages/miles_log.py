@@ -8,7 +8,6 @@ import dash_ag_grid as dag
 import requests
 import teslapy
 from dash import Input, Output, State, callback, html, dcc
-import dash_bootstrap_components as dbc
 
 from dashboard.db.pg import PG
 
