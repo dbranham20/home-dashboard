@@ -4,6 +4,7 @@ import psycopg2
 from psycopg2 import OperationalError, InterfaceError
 from contextlib import contextmanager
 from psycopg2.extras import execute_values
+from sqlalchemy import create_engine
 
 class PG:
     def __init__(self):
@@ -55,6 +56,11 @@ class PG:
             cur.close()
 
     # ---- public API ----
+    def get_engine(self):
+        return create_engine(
+            f"postgresql+psycopg2://{os.getenv('PGUSER')}:{os.getenv('PGPASSWORD')}@{os.getenv('PGHOST')}:{os.getenv('PGPORT')}/{os.getenv('PGDATABASE')}"
+        )
+    
     def execute_query(self, query, params=None, fetch=False):
         """
         Execute a SQL statement.
