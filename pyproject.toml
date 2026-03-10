@@ -23,6 +23,7 @@ uvicorn = "^0.37.0"
 plaid-python = "^37.0.0"
 flask-cors = "^6.0.1"
 sqlalchemy = "^2.0.0"
+dash_bootstrap_components = "^1.4.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"
