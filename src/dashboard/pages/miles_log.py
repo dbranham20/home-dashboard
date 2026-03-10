@@ -7,6 +7,7 @@ import dash_mantine_components as dmc
 import dash_ag_grid as dag
 import requests
 import teslapy
+from sqlalchemy import create_engine
 from dash import Input, Output, State, callback, html, dcc
 
 from dashboard.db.pg import PG
@@ -43,16 +44,12 @@ def fetch_live_tesla_data(max_retries: int = 1, retry_delay: int = 10):
 	return {"error": "Unknown failure"}
 
 
-
-
 def fetch_mileage_data():
-	pg = PG()
 	try:
+		pg = PG()
 		query = 'SELECT date, miles FROM public."tesla-miles-log" ORDER BY date;'
-		df = pd.read_sql(query, pg.connection)
-		pg.close()
+		df = pd.read_sql(query, pg.get_engine())
 
-		df['Mileage_Diff'] = df['miles'].diff()
 		df['Date'] = pd.to_datetime(df['date'])
 		df["Mileage_Increment"] = df["miles"].diff()
 		df["Days_Diff"] = df["Date"].diff().dt.days
@@ -61,49 +58,104 @@ def fetch_mileage_data():
 		return df
 
 	except Exception as e:
-		print(f'Error connecting to database: {e}')
-		return pd.DataFrame()
+			print(f'Error connecting to database: {e}')
+			return pd.DataFrame()
+
+def build_monthly_data(df):
+	rows = []
+	for i in range(1, len(df)):
+			start_date = df.loc[i-1, "Date"]
+			end_date = df.loc[i, "Date"]
+			miles = df.loc[i, "Mileage_Increment"]
+			days = df.loc[i, "Days_Diff"]
+			daily_rate = miles / days
+
+			# Generate each day in the interval and assign daily miles
+			date_range = pd.date_range(start=start_date, end=end_date - pd.Timedelta(days=1))
+			for day in date_range:
+					rows.append({"date": day, "miles": daily_rate})
+
+	daily_df = pd.DataFrame(rows)
+	daily_df["year"] = daily_df["date"].dt.year
+	daily_df["month"] = daily_df["date"].dt.month
+
+	monthly_df = daily_df.groupby(["year", "month"])["miles"].sum().reset_index()
+	monthly_df["month_name"] = pd.to_datetime(monthly_df["month"], format="%m").dt.strftime("%b")
+	return monthly_df
+
+
+def calculate_rolling_average(mileage_df):
+	mileage_df["date"] = pd.to_datetime(mileage_df["date"])
+
+	mileage_df = mileage_df.sort_values("date").reset_index(drop=True)
+	mileage_df["prev_date"] = mileage_df["date"].shift(1)
+	mileage_df["prev_miles"] = mileage_df["miles"].shift(1)
+	mileage_df["days_elapsed"] = (mileage_df["date"] - mileage_df["prev_date"]).dt.days
+	mileage_df["miles_driven"] = mileage_df["miles"] - mileage_df["prev_miles"]
+	mileage_df["daily_rate"] = mileage_df["miles_driven"] / mileage_df["days_elapsed"]
+
+	# Rolling average (window=3 smooths without losing too much detail)
+	mileage_df["rolling_avg"] = mileage_df["daily_rate"].rolling(window=3, min_periods=1).mean()
+
+	return mileage_df
 
 
 def make_db_charts(mileage_df):
-	bar_colors = [
-		"red" if avg > 40 else "#4ea35a"
-		for avg in mileage_df["Avg_Mileage_Per_Day"].fillna(0)
-	]
+	bar_colors = ["rgba(255, 80, 80, 0.3)" if x > 40 else "rgba(100, 149, 237, 0.3)" for x in mileage_df["Avg_Mileage_Per_Day"]]
 
-	line_fig = go.Figure()
-	line_fig.add_trace(go.Scatter(
-		x=mileage_df["Date"],
-		y=mileage_df["miles"],
-		mode="lines+markers",
-		name="Mileage",
-		line=dict(color="blue"),
-		marker=dict(size=8),
-		hovertemplate="Date: %{x|%Y-%m-%d}<br>Mileage: %{y}<extra></extra>"
-	))
-	line_fig.update_layout(
-		margin=dict(l=20, r=20, t=5, b=30),
-		xaxis_title="Date",
-		yaxis_title="Mileage",
-		template="plotly_white"
+	monthly_df = build_monthly_data(mileage_df.copy())
+
+	mom_fig = go.Figure()
+	for year in sorted(monthly_df["year"].unique()):
+			year_data = monthly_df[monthly_df["year"] == year]
+			mom_fig.add_trace(go.Scatter(
+					x=year_data["month_name"],
+					y=year_data["miles"],
+					mode="lines+markers",
+					name=str(year),
+					hovertemplate="Month: %{x}<br>Miles: %{y:.0f}<extra></extra>"
+			))
+
+	mom_fig.update_layout(
+			title="Month-over-Month Mileage",
+			xaxis=dict(categoryorder="array", categoryarray=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]),
+			yaxis_title="Miles Driven",
+			template="plotly_dark",
+			legend_title="Year"
 	)
 
-	# Bar chart: Average mileage per day (highlight >40 in red)
+
 	bar_fig = go.Figure()
+	mileage_df = calculate_rolling_average(mileage_df)
+	# Raw daily rate as faint bars for context
 	bar_fig.add_trace(go.Bar(
-		x=mileage_df["Date"],
-		y=mileage_df["Avg_Mileage_Per_Day"],
-		marker_color=bar_colors,
-		hovertemplate="Date: %{x|%Y-%m-%d}<br>Avg per day: %{y:.2f}<extra></extra>"
+			x=mileage_df["date"],
+			y=mileage_df["daily_rate"],
+			marker_color=bar_colors,
+			name="Miles/Day (interval)",
+			hovertemplate="Date: %{x|%Y-%m-%d}<br>Interval avg: %{y:.1f} mi/day<extra></extra>"
 	))
+
+	# Rolling average as a bold line on top
+	bar_fig.add_trace(go.Scatter(
+			x=mileage_df["date"],
+			y=mileage_df["rolling_avg"],
+			mode="lines+markers",
+			line=dict(color="royalblue", width=3),
+			marker=dict(size=6),
+			name="3-Entry Rolling Avg",
+			hovertemplate="Date: %{x|%Y-%m-%d}<br>Rolling avg: %{y:.1f} mi/day<extra></extra>"
+	))
+
 	bar_fig.update_layout(
-		margin=dict(l=20, r=20, t=5, b=30),
-		xaxis_title="Date",
-		yaxis_title="Average Mileage Per Day",
-		template="plotly_white"
+			margin=dict(l=20, r=20, t=5, b=30),
+			xaxis_title="date",
+			yaxis_title="Miles Per Day",
+			template="plotly_white",
+			legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
 	)
 
-	return line_fig, bar_fig
+	return mom_fig, bar_fig
 
 
 def make_live_charts(battery_perc):
@@ -187,7 +239,7 @@ def layout():
 				dag.AgGrid(
 					id="mileage-log-grid",
 					rowData=pd.DataFrame().to_dict("records"),
-					columnDefs=[{"field": 'date'}, {"field": 'mileage'}],
+					columnDefs=[{"field": 'date', "headerName": "Date"}, {"field": 'miles', "headerName": "Miles"}],
 					className="ag-theme-alpine-dark",
 					style={"height": "400px"},
 					columnSize="responsiveSizeToFit",
