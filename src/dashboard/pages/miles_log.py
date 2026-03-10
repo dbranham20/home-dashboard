@@ -7,8 +7,8 @@ import dash_mantine_components as dmc
 import dash_ag_grid as dag
 import requests
 import teslapy
-from sqlalchemy import create_engine
 from dash import Input, Output, State, callback, html, dcc
+import dash_bootstrap_components as dbc
 
 from dashboard.db.pg import PG
 
@@ -184,74 +184,115 @@ def make_live_charts(battery_perc):
 
 # Add to your Dash layout
 def layout():
-	return html.Div([
-		html.H2(id='tesla-title', children=dmc.Skeleton(height=30, width='10%'), style={'marginLeft': '.5rem', 'marginTop': '.5rem'}),
-		dcc.Store(id='mileage-init-load', data=None),
-		dmc.SimpleGrid(
-			cols=2,
-			spacing="sm",
-			children=[
-				dmc.Card(
-					id='battery-card',
-					children=[
-						html.H3("Battery Level", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
-						dmc.Skeleton(height=30, width='100%')
-					],
-					shadow="sm",
-					radius="md",
-					withBorder=True
-				),
-				dmc.Card(
-					id='odometer-card',
-					children=[
-						html.H3("Odometer", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
-						dmc.Skeleton(height=30, width='100%')
-					],
-					shadow="sm",
-					padding="md",
-					radius="md",
-					withBorder=True
-				),
-				dmc.Card(
-					children=[
-						html.H3("Mileage Over Time", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
-						dcc.Graph(id='line', config={"displayModeBar": False})
-					],
-					shadow="sm",
-					padding="md",
-					radius="md",
-					withBorder=True
-				),
-				dmc.Card(
-					children=[
-						html.H3("Average Mileage Per Day", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
-						dcc.Graph(id='bar', config={"displayModeBar": False})
-					],
-					shadow="sm",
-					padding="md",
-					radius="md",
-					withBorder=True
-				)
-		], style={'marginBottom': '.5rem'}),
-		dmc.Card(
-			children=[
-				html.H3("All Mileage Data", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
-				dag.AgGrid(
-					id="mileage-log-grid",
-					rowData=pd.DataFrame().to_dict("records"),
-					columnDefs=[{"field": 'date', "headerName": "Date"}, {"field": 'miles', "headerName": "Miles"}],
-					className="ag-theme-alpine-dark",
-					style={"height": "400px"},
-					columnSize="responsiveSizeToFit",
-					defaultColDef={"filter": True, "resizable": True},
-				),
-			],
-			shadow="sm",
-			padding="md",
-			radius="md",
-			withBorder=True
-		)
-	], style={'margin': '.5rem'})
+    return html.Div([
+        html.H2(id='tesla-title', children=dmc.Skeleton(height=30, width='10%'), style={'marginLeft': '.5rem', 'marginTop': '.5rem'}),
+        dcc.Store(id='mileage-init-load', data=None),
+        dmc.SimpleGrid(
+            cols=2,
+            spacing="sm",
+            children=[
+                dmc.Card(
+                    id='battery-card',
+                    children=[
+                        html.H3("Battery Level", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
+                        dmc.Skeleton(height=30, width='100%')
+                    ],
+                    shadow="sm",
+                    radius="md",
+                    withBorder=True
+                ),
+                dmc.Card(
+                    id='odometer-card',
+                    children=[
+                        html.H3("Odometer", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
+                        dmc.Skeleton(height=30, width='100%')
+                    ],
+                    shadow="sm",
+                    padding="md",
+                    radius="md",
+                    withBorder=True
+                ),
+                dmc.Card(
+                    children=[
+                        html.H3("Historical", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
+                        dcc.Graph(id='line', config={"displayModeBar": False})
+                    ],
+                    shadow="sm",
+                    padding="md",
+                    radius="md",
+                    withBorder=True
+                ),
+                dmc.Card(
+                    children=[
+                        html.H3("Rolling Average", style={'paddingBottom': 0, 'marginBottom': '.5rem', 'marginTop': '.5rem'}),
+                        dcc.Graph(id='bar', config={"displayModeBar": False})
+                    ],
+                    shadow="sm",
+                    padding="md",
+                    radius="md",
+                    withBorder=True
+                )
+            ], style={'marginBottom': '.5rem'}),
+        dmc.Card(
+            children=[
+                dmc.CardSection(
+                    dmc.Group(
+                        [
+                            html.H3("All Mileage Data", style={"margin": 0}),
+                            dmc.Button("Log Mileage", id="open-mileage-modal", size="sm", variant="filled"),
+                        ],
+                        justify="space-between",
+                        align="center",
+                    ),
+                    withBorder=True,
+                    inheritPadding=True,
+                    py="xs",
+                ),
+                dag.AgGrid(
+                    id="mileage-log-grid",
+                    rowData=pd.DataFrame().to_dict("records"),
+                    columnDefs=[{"field": 'date', "headerName": "Date"}, {"field": 'miles', "headerName": "Miles"}],
+                    className="ag-theme-alpine-dark",
+                    style={"height": "400px"},
+                    columnSize="responsiveSizeToFit",
+                    defaultColDef={"filter": True, "resizable": True},
+                ),
+            ],
+            shadow="sm",
+            padding="md",
+            radius="md",
+            withBorder=True
+        ),
+        dmc.Modal(
+            id="mileage-modal",
+            title="Log New Mileage Entry",
+            centered=True,
+            children=[
+                dmc.Stack([
+                    dmc.DatePickerInput(
+                        id="log-date",
+                        label="Date",
+                        value=str(pd.Timestamp.today().date()),
+                        valueFormat="YYYY-MM-DD",
+                    ),
+                    dmc.NumberInput(
+                        id="log-miles",
+                        label="Odometer Miles",
+                        placeholder="e.g. 36000",
+                        min=0,
+                    ),
+                    html.Div(id="log-feedback"),
+                    dmc.Group(
+                        [
+                            dmc.Button("Submit", id="submit-mileage", color="green"),
+                            dmc.Button("Cancel", id="close-mileage-modal", variant="outline", color="gray"),
+                        ],
+                        justify="flex-end"
+                    )
+                ])
+            ]
+        ),
+    ], style={'margin': '.5rem'})
 
 @callback(
 	Output('line', 'figure', allow_duplicate=True),
@@ -274,6 +315,8 @@ def init_db_charts(_, _1, theme_state, line_fig, bar_fig):
 
 	data = fetch_mileage_data()
 	line_fig, bar_fig = make_db_charts(data)
+
+	data['date'] = pd.to_datetime(data['date']).dt.strftime('%Y-%m-%d')
 
 	template = 'dark_custom' if theme_state else 'plotly'
 	line_fig.update_layout(template=template)
@@ -305,3 +348,36 @@ def handle_mileage_load(_,):
 	batt_fig = make_live_charts(int(battery_level))
 
 	return odometer_card, batt_fig, tesla_name
+
+@callback(
+    Output("mileage-modal", "opened"),
+    Input("open-mileage-modal", "n_clicks"),
+    Input("close-mileage-modal", "n_clicks"),
+    State("mileage-modal", "opened"),
+    prevent_initial_call=True
+)
+def toggle_modal(open_clicks, close_clicks, opened):
+    return not opened
+
+
+@callback(
+    Output("log-feedback", "children"),
+    Output("mileage-modal", "opened", allow_duplicate=True),
+    Output('mileage-init-load', 'data'),
+    Input("submit-mileage", "n_clicks"),
+    State("log-date", "value"),
+    State("log-miles", "value"),
+    prevent_initial_call=True
+)
+def submit_mileage(n_clicks, date, miles):
+    if not date or not miles:
+        return dmc.Alert("Please fill in both fields.", color="yellow"), True, dash.no_update
+    try:
+        pg = PG()
+        pg.execute_query(
+            'INSERT INTO public."tesla-miles-log" (date, miles) VALUES (%s, %s)',
+            params=(date, int(miles))
+        )
+        return "", False, True
+    except Exception as e:
+        return dmc.Alert(f"Error: {e}", color="red"), True, dash.no_update
